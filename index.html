@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script>
+    async function load() {
+      function getDistrictBorder(index, data) {
+        if (index != 24 && data[index].MSRRGN_NM !== data[index + 1].MSRRGN_NM) return "district_border";
+        return "";
+      }
+      function getIndexColor(index, data) {
+        if (data[index].IDEX_NM == '보통') return "color_normal";
+        if (data[index].IDEX_NM == '좋음') return "color_good";
+        if (data[index].IDEX_NM == '나쁨') return "color_bad";
+        return "color_verybad";
+      }
+      function getMvlColor(mvl, sortedData) {
+        const index = sortedData.findIndex(item => item.IDEX_MVL === mvl);
+        if (index < 5) {
+          return 'mvl_bad';
+        }
+        if (index > 19) {
+          return 'mvl_good';
+        }
+        return '';
+      }
+
+      const con = confirm("데이터를 불러오시겠습니까?");
+      if (con === false) {
+        console.error("데이터를 안 불러옵니다.");
+        return;
+      }
+      const res = await fetch("http://openapi.seoul.go.kr:8088/54416e584164656e39387a5550424c/json/RealtimeCityAir/1/25");
+      const res2 = await res.json();
+      alert(res2.RealtimeCityAir.RESULT.MESSAGE);
+      let data = res2.RealtimeCityAir.row;
+      let sortedData = [...data];
+      sortedData.sort((a, b) => b.IDEX_MVL - a.IDEX_MVL);
+      let result = '';
+      let pm10_Data = [];
+      let pm25_Data = [];
+      let label = [];
+      for (let i = 0; i < 25; i++) {
+        pm10_Data.push(data[i].PM10);
+        pm25_Data.push(data[i].PM25);
+        label.push(data[i].MSRSTE_NM);
+        let mvl = data[i].IDEX_MVL;
+        result += `
+          <tr class=${getDistrictBorder(i, data)}>
+            <td>${data[i].MSRSTE_NM != 0 ? data[i].MSRSTE_NM : '-'}</td>
+            <td class=${getIndexColor(i, data)}>${data[i].IDEX_NM != '' ? data[i].IDEX_NM : '-'}</td>
+            <td>${data[i].PM10 != 0 ? data[i].PM10 : '-'}</td>
+            <td>${data[i].PM25 != 0 ? data[i].PM25 : '-'}</td>
+            <td>${data[i].O3 != 0 ? data[i].O3 : '-'}</td>
+            <td>${data[i].SO2 != 0 ? data[i].SO2 : '-'}</td>
+            <td class=${getMvlColor(mvl, sortedData)}>${data[i].IDEX_MVL != 0 ? data[i].IDEX_MVL : '-'}</td>
+          </tr>
+        `;
+      }
+      document.getElementById('data').innerHTML = result;
+    }
+    console.log("데이터를 불러옵니다");
+  </script>
+
+  <style>
+    body {
+      background: #eee;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .data_container {
+      width: 100vw;
+      max-width: 400px;
+    }
+
+    button {
+      padding: 5px 10px;
+      border: 2px #0d6efd solid;
+      border-radius: 10px;
+      margin: 5px 0px;
+      color: white;
+      background-color: #0d6efd;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    button:hover {
+      color: #0d6efd;
+      background-color: white;
+    }
+
+    table {
+      width: 100%;
+      border: 5px #0d6efd solid;
+      border-spacing: 0px;
+      border-radius: 10px;
+      overflow: hidden;
+      background-color: white;
+    }
+
+    th {
+      border: 1px #0d6efd solid;
+      text-align: center;
+      padding: 4px 8px;
+      color: white;
+      background-color: #0d6efd;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    td {
+      border: 0px white solid;
+      text-align: center;
+      padding: 3px 0px;
+      color: rgb(57, 57, 57);
+    }
+
+    .district_border td {
+      border-width: 0px 0px 5px 0px;
+      border-color: #0d6efd;
+      border-style: solid;
+    }
+
+    .color_normal {
+      color: greenyellow;
+    }
+
+    .color_good {
+      color: green;
+    }
+
+    .color_bad {
+      color: orange;
+    }
+
+    .color_verybad {
+      color: red;
+    }
+
+    .mvl_bad {
+      color: red;
+      font-weight: bold;
+    }
+
+    .mvl_good {
+      color: blue;
+      font-weight: bold;
+    }
+
+    .chart_container {
+      width: 100vw;
+      max-width: 600px;
+    }
+
+    @media screen and (max-width: 600px) {
+      .chart_container {
+        max-width: 400px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="data_container">
+    <button onclick="load()">데이터 불러오기</button>
+    <table>
+      <thead>
+        <th>지역명</th>
+        <th>지수</th>
+        <th>PM10</th>
+        <th>PM25</th>
+        <th>O3</th>
+        <th>SO2</th>
+        <th>MVL</th>
+      </thead>
+      <tbody id="data">
+      </tbody>
+    </table>
+  </div>
+</body>
+
+</html>
